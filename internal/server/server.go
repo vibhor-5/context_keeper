@@ -24,7 +24,7 @@ func New(db *sql.DB, cfg *config.Config) *Server {
 
 	// Initialize services
 	authSvc := services.NewAuthService(cfg)
-	var githubSvc services.GitHubService   // Will be implemented in task 4
+	githubSvc := services.NewGitHubService()
 	var jobSvc services.JobService         // Will be implemented in task 6
 	var contextSvc services.ContextService // Will be implemented in task 7
 
