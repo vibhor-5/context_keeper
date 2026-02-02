@@ -36,8 +36,31 @@ func New(
 
 // HandleGitHubAuth handles GitHub OAuth callback
 func (h *Handlers) HandleGitHubAuth(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement in task 3.1
-	writeError(w, http.StatusNotImplemented, "not_implemented", "GitHub OAuth not implemented yet")
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "Method not allowed")
+		return
+	}
+
+	// Get authorization code from request
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		writeError(w, http.StatusBadRequest, "missing_code", "Authorization code is required")
+		return
+	}
+
+	// Handle OAuth callback
+	if h.authSvc == nil {
+		writeError(w, http.StatusNotImplemented, "not_implemented", "Authentication service not initialized")
+		return
+	}
+
+	authResp, err := h.authSvc.HandleGitHubCallback(r.Context(), code)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "oauth_failed", err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, authResp)
 }
 
 // HandleRepos handles repository listing and status requests

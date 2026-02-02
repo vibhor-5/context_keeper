@@ -36,12 +36,7 @@ func AuthRequired(authSvc services.AuthService, next http.HandlerFunc) http.Hand
 			return
 		}
 
-		// Validate token (will be implemented in task 3.2)
-		if authSvc == nil {
-			writeError(w, http.StatusNotImplemented, "not_implemented", "Authentication not implemented yet")
-			return
-		}
-
+		// Validate token
 		user, err := authSvc.ValidateJWT(token)
 		if err != nil {
 			writeError(w, http.StatusUnauthorized, "unauthorized", "Invalid token")

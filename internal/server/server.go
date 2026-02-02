@@ -22,11 +22,11 @@ func New(db *sql.DB, cfg *config.Config) *Server {
 	// Initialize repository
 	repo := repository.New(db)
 
-	// Initialize services (will be implemented in later tasks)
-	var authSvc services.AuthService
-	var githubSvc services.GitHubService
-	var jobSvc services.JobService
-	var contextSvc services.ContextService
+	// Initialize services
+	authSvc := services.NewAuthService(cfg)
+	var githubSvc services.GitHubService   // Will be implemented in task 4
+	var jobSvc services.JobService         // Will be implemented in task 6
+	var contextSvc services.ContextService // Will be implemented in task 7
 
 	// Initialize handlers
 	h := handlers.New(authSvc, githubSvc, jobSvc, contextSvc, repo)
