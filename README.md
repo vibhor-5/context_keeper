@@ -1,4 +1,4 @@
-# ContextKeeper Go Backend
+# Cortext
 
 A GitHub repository memory system that preserves engineering context from PRs, issues, and commits. **✅ COMPLETE IMPLEMENTATION**
 
