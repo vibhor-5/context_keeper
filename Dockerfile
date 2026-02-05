@@ -1,35 +1,36 @@
-FROM golang:1.21-alpine AS builder
+# ContextKeeper MCP + Slack Bot Dockerfile
 
+FROM node:18-alpine
+
+# Set working directory
 WORKDIR /app
 
+# Copy package files
+COPY package*.json ./
+
 # Install dependencies
-COPY go.mod go.sum ./
-RUN go mod download
+RUN npm ci --only=production
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main cmd/server/main.go
-
-FROM alpine:latest
+RUN npm run build
 
 # Create non-root user
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S contextkeeper -u 1001
 
-RUN apk --no-cache add ca-certificates
-WORKDIR /home/appuser/
+# Change ownership of the app directory
+RUN chown -R contextkeeper:nodejs /app
+USER contextkeeper
 
-# Copy the binary from builder
-COPY --from=builder /app/main .
-RUN chown appuser:appgroup main
+# Expose ports
+EXPOSE 3001 3002
 
-# Switch to non-root user
-USER appuser
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
-# Expose port
-EXPOSE 8080
-
-# Run the application
-CMD ["./main"]
+# Start the application
+CMD ["npm", "start"]
