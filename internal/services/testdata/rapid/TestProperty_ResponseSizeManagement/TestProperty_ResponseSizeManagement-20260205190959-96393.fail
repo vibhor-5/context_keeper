@@ -1,0 +1,28 @@
+# 2026/02/05 19:09:59.687003 [TestProperty_ResponseSizeManagement] [rapid] draw max_tokens: 217
+# 2026/02/05 19:09:59.687006 [TestProperty_ResponseSizeManagement] [rapid] draw content_type: "code_explanation"
+# 2026/02/05 19:09:59.687011 [TestProperty_ResponseSizeManagement] [rapid] draw content_size: 1707
+# 2026/02/05 19:09:59.687065 [TestProperty_ResponseSizeManagement] 
+# 	Error Trace:	/Users/vibhorkumar/Desktop/projs/context_keeper/internal/services/mcp_response_optimizer_properties_test.go:65
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:371
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:380
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:205
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:120
+# 	            				/Users/vibhorkumar/Desktop/projs/context_keeper/internal/services/mcp_response_optimizer_properties_test.go:21
+# 	            				/usr/local/go/src/runtime/asm_arm64.s:1223
+# 	Error:      	"# Why test/file.go Exists\n\n## Historical Context\n\n### 2024-01-01\n**Reason for Change:** Initial implementation\n\n**Context:** This file was created to handle specific functionality in the system. This file was created to handle specific functionality in the system. This file was created to handle specific functionality in the system. This file was created to handle specific functionality in the system. This fi...\n\n## Summary\n\nThis code exists as a result of architectural decisions and requirements. This code exists as a result of architectural decisions and requirements. This code exists as a result of architectural decisions and requirements. This code exists as a result of architectural decisions and requirements. This...\n\n*Note: Code explanation has been summarized. Use get_context_for_file for detailed context.*\n" does not contain "truncated"
+# 	Test:       	TestProperty_ResponseSizeManagement
+# 	Messages:   	Large content should contain truncation notice
+# 2026/02/05 19:09:59.687071 [TestProperty_ResponseSizeManagement] [rapid] draw chunk_size: 60
+# 
+v0.4.8#1983916242868083022
+0x1fd2da8b166916
+0x105807931f3085
+0x75
+0x1eaf93609cb59a
+0x4
+0xdd2a5d66c3d82
+0x1a82728202809e
+0x679
+0x1a009c496f657f
+0xd582fdf72f1e7
+0xa

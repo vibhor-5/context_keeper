@@ -13,9 +13,13 @@ import (
 // Config holds all configuration for the application
 type Config struct {
 	Port        int
+	ServerURL   string // Base URL for the server (e.g., https://api.example.com)
 	DatabaseURL string
 	JWTSecret   string
 	GitHubOAuth GitHubOAuthConfig
+	GoogleOAuth GoogleOAuthConfig
+	SlackOAuth  SlackOAuthConfig
+	Email       EmailConfig
 	AIService   AIServiceConfig
 	Environment string
 	LogLevel    string
@@ -28,6 +32,31 @@ type GitHubOAuthConfig struct {
 	RedirectURL  string
 }
 
+// GoogleOAuthConfig holds Google OAuth configuration
+type GoogleOAuthConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+}
+
+// SlackOAuthConfig holds Slack OAuth configuration
+type SlackOAuthConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+}
+
+// EmailConfig holds email service configuration
+type EmailConfig struct {
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUsername string
+	SMTPPassword string
+	FromAddress  string
+	FromName     string
+	BaseURL      string // Base URL for email links (defaults to ServerURL if not set)
+}
+
 // AIServiceConfig holds AI service configuration
 type AIServiceConfig struct {
 	BaseURL string
@@ -36,8 +65,12 @@ type AIServiceConfig struct {
 
 // Load loads configuration from environment variables
 func Load() *Config {
+	// Get server URL first as it's used for defaults
+	serverURL := getEnv("SERVER_URL", getDefaultServerURL())
+	
 	cfg := &Config{
 		Port:        getEnvInt("PORT", 8080),
+		ServerURL:   serverURL,
 		DatabaseURL: getEnv("DATABASE_URL", getDefaultDatabaseURL()),
 		JWTSecret:   getSecretOrEnv("JWT_SECRET_FILE", "JWT_SECRET", generateSecureSecret()),
 		Environment: getEnv("ENVIRONMENT", "development"),
@@ -45,7 +78,26 @@ func Load() *Config {
 		GitHubOAuth: GitHubOAuthConfig{
 			ClientID:     getEnv("GITHUB_CLIENT_ID", ""),
 			ClientSecret: getSecretOrEnv("GITHUB_CLIENT_SECRET_FILE", "GITHUB_CLIENT_SECRET", ""),
-			RedirectURL:  getEnv("GITHUB_REDIRECT_URL", "http://localhost:8080/api/auth/github"),
+			RedirectURL:  getEnv("GITHUB_REDIRECT_URL", serverURL+"/api/auth/github"),
+		},
+		GoogleOAuth: GoogleOAuthConfig{
+			ClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+			ClientSecret: getSecretOrEnv("GOOGLE_CLIENT_SECRET_FILE", "GOOGLE_CLIENT_SECRET", ""),
+			RedirectURL:  getEnv("GOOGLE_REDIRECT_URL", serverURL+"/api/auth/google"),
+		},
+		SlackOAuth: SlackOAuthConfig{
+			ClientID:     getEnv("SLACK_CLIENT_ID", ""),
+			ClientSecret: getSecretOrEnv("SLACK_CLIENT_SECRET_FILE", "SLACK_CLIENT_SECRET", ""),
+			RedirectURL:  getEnv("SLACK_REDIRECT_URL", serverURL+"/api/auth/slack"),
+		},
+		Email: EmailConfig{
+			SMTPHost:     getEnv("SMTP_HOST", ""),
+			SMTPPort:     getEnvInt("SMTP_PORT", 587),
+			SMTPUsername: getEnv("SMTP_USERNAME", ""),
+			SMTPPassword: getSecretOrEnv("SMTP_PASSWORD_FILE", "SMTP_PASSWORD", ""),
+			FromAddress:  getEnv("EMAIL_FROM_ADDRESS", "noreply@contextkeeper.dev"),
+			FromName:     getEnv("EMAIL_FROM_NAME", "Context Keeper"),
+			BaseURL:      getEnv("EMAIL_BASE_URL", serverURL),
 		},
 		AIService: AIServiceConfig{
 			BaseURL: getEnv("AI_SERVICE_URL", "http://localhost:8000"),
@@ -69,6 +121,10 @@ func (c *Config) Validate() error {
 		errors = append(errors, "PORT must be between 1 and 65535")
 	}
 
+	if c.ServerURL == "" {
+		errors = append(errors, "SERVER_URL is required")
+	}
+
 	if c.DatabaseURL == "" {
 		errors = append(errors, "DATABASE_URL is required")
 	}
@@ -77,12 +133,30 @@ func (c *Config) Validate() error {
 		errors = append(errors, "JWT_SECRET is required")
 	}
 
-	if c.GitHubOAuth.ClientID == "" {
-		errors = append(errors, "GITHUB_CLIENT_ID is required")
+	// Validate OAuth configurations using helper
+	if err := validateOAuthConfig("GitHub", c.GitHubOAuth.ClientID, c.GitHubOAuth.ClientSecret); err != nil {
+		errors = append(errors, err.Error())
 	}
 
-	if c.GitHubOAuth.ClientSecret == "" {
-		errors = append(errors, "GITHUB_CLIENT_SECRET is required")
+	if err := validateOAuthConfig("Google", c.GoogleOAuth.ClientID, c.GoogleOAuth.ClientSecret); err != nil {
+		errors = append(errors, err.Error())
+	}
+
+	if err := validateOAuthConfig("Slack", c.SlackOAuth.ClientID, c.SlackOAuth.ClientSecret); err != nil {
+		errors = append(errors, err.Error())
+	}
+
+	// Email configuration is optional but if SMTP host is provided, other fields are required
+	if c.Email.SMTPHost != "" {
+		if c.Email.SMTPUsername == "" {
+			errors = append(errors, "SMTP_USERNAME is required when SMTP_HOST is provided")
+		}
+		if c.Email.SMTPPassword == "" {
+			errors = append(errors, "SMTP_PASSWORD is required when SMTP_HOST is provided")
+		}
+		if c.Email.FromAddress == "" {
+			errors = append(errors, "EMAIL_FROM_ADDRESS is required when SMTP_HOST is provided")
+		}
 	}
 
 	if c.AIService.BaseURL == "" {
@@ -97,6 +171,20 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("validation errors: %s", strings.Join(errors, ", "))
 	}
 
+	return nil
+}
+
+// validateOAuthConfig validates OAuth configuration for a provider
+// OAuth is optional but if provided, both client ID and secret are required
+func validateOAuthConfig(providerName, clientID, clientSecret string) error {
+	if clientID != "" && clientSecret == "" {
+		return fmt.Errorf("%s_CLIENT_SECRET is required when %s_CLIENT_ID is provided", 
+			strings.ToUpper(providerName), strings.ToUpper(providerName))
+	}
+	if clientSecret != "" && clientID == "" {
+		return fmt.Errorf("%s_CLIENT_ID is required when %s_CLIENT_SECRET is provided", 
+			strings.ToUpper(providerName), strings.ToUpper(providerName))
+	}
 	return nil
 }
 
@@ -124,6 +212,18 @@ func getEnvInt(key string, defaultValue int) int {
 		}
 	}
 	return defaultValue
+}
+
+// getDefaultServerURL returns the default server URL based on environment
+func getDefaultServerURL() string {
+	env := getEnv("ENVIRONMENT", "development")
+	if env == "development" {
+		port := getEnvInt("PORT", 8080)
+		return fmt.Sprintf("http://localhost:%d", port)
+	}
+	// In production, this should always be explicitly set
+	// Return empty string to force validation error if not set
+	return ""
 }
 
 // getDefaultDatabaseURL returns the default database URL based on environment

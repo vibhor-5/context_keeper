@@ -1,0 +1,39 @@
+# 2026/02/05 19:09:13.873695 [TestProperty_ResponseSizeManagement] [rapid] draw max_tokens: 102
+# 2026/02/05 19:09:13.873697 [TestProperty_ResponseSizeManagement] [rapid] draw content_type: "search_results"
+# 2026/02/05 19:09:13.873703 [TestProperty_ResponseSizeManagement] [rapid] draw content_size: 974
+# 2026/02/05 19:09:13.873749 [TestProperty_ResponseSizeManagement] 
+# 	Error Trace:	/Users/vibhorkumar/Desktop/projs/context_keeper/internal/services/mcp_response_optimizer_properties_test.go:50
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:371
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:380
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:205
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:120
+# 	            				/Users/vibhorkumar/Desktop/projs/context_keeper/internal/services/mcp_response_optimizer_properties_test.go:21
+# 	Error:      	"430" is not less than or equal to "204"
+# 	Test:       	TestProperty_ResponseSizeManagement
+# 	Messages:   	Optimized content should be reasonably close to token limit
+# 2026/02/05 19:09:13.873784 [TestProperty_ResponseSizeManagement] 
+# 	Error Trace:	/Users/vibhorkumar/Desktop/projs/context_keeper/internal/services/mcp_response_optimizer_properties_test.go:51
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:371
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:380
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:205
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:120
+# 	            				/Users/vibhorkumar/Desktop/projs/context_keeper/internal/services/mcp_response_optimizer_properties_test.go:21
+# 	Error:      	"1720" is not less than "1501"
+# 	Test:       	TestProperty_ResponseSizeManagement
+# 	Messages:   	Optimized content should be shorter than original
+# 2026/02/05 19:09:13.873789 [TestProperty_ResponseSizeManagement] [rapid] draw chunk_size: 141
+# 
+v0.4.8#1977394255342293901
+0xdab7ef1f631c4
+0x4d8f61b4b7855
+0x2
+0xc37afb12ae8
+0x0
+0x1a0fad0e4472dd
+0x1e952255d54d57
+0x1f8d
+0x1bcb
+0x39c
+0x412aca575bfdc
+0x101f0277dc819f
+0x5b

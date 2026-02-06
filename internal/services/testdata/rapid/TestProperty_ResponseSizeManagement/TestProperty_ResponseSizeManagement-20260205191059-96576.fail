@@ -1,0 +1,27 @@
+# 2026/02/05 19:10:59.622903 [TestProperty_ResponseSizeManagement] [rapid] draw max_tokens: 324
+# 2026/02/05 19:10:59.622904 [TestProperty_ResponseSizeManagement] [rapid] draw content_type: "architecture_discussions"
+# 2026/02/05 19:10:59.622905 [TestProperty_ResponseSizeManagement] [rapid] draw content_size: 5000
+# 2026/02/05 19:10:59.622959 [TestProperty_ResponseSizeManagement] 
+# 	Error Trace:	/Users/vibhorkumar/Desktop/projs/context_keeper/internal/services/mcp_response_optimizer_properties_test.go:60
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:371
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:380
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:205
+# 	            				/Users/vibhorkumar/go/pkg/mod/pgregory.net/rapid@v1.2.0/engine.go:120
+# 	            				/Users/vibhorkumar/Desktop/projs/context_keeper/internal/services/mcp_response_optimizer_properties_test.go:21
+# 	Error:      	"9905" is not less than "7503"
+# 	Test:       	TestProperty_ResponseSizeManagement
+# 	Messages:   	Optimized content should not be excessively larger
+# 2026/02/05 19:10:59.622975 [TestProperty_ResponseSizeManagement] [rapid] draw chunk_size: 102
+# 
+v0.4.8#7296739818619272762
+0xa28ca1bf1d30b
+0x168e6ad82e047d
+0xe0
+0x1c642400e659d2
+0x3
+0x16889090383ca7
+0x1f865a0b558c8b
+0xffffffffffffffff
+0x1c392d3d88d422
+0x121a2bbdc5a0c8
+0x34

@@ -1,136 +1,172 @@
-# ContextKeeper MCP + Slack Bot
+# MCP Context Engine
 
-AI-powered repository context and team onboarding through a Model Context Protocol (MCP) server and Slack bot integration.
+AI-powered developer context intelligence that aggregates knowledge from GitHub, Slack, and Discord directly into your IDE through MCP-compatible tools.
 
-## Overview
-
-ContextKeeper transforms the manual process of hunting for repository context (taking hours) into instant AI-powered responses (taking seconds). The system consists of two main components:
-
-- **MCP Server**: Bridges AI assistants with the existing Go backend via Model Context Protocol
-- **Slack Bot**: Provides team interaction surface for context queries through slash commands
-
-## Architecture
-
-```
-AI Assistants (Claude, GPT-4) → MCP Server → Go Backend → PostgreSQL
-Team Members → Slack Bot → MCP Server → Go Backend → PostgreSQL
-```
-
-## Features
-
-- **AI Assistant Integration**: Query repository context through MCP protocol
-- **Slack Commands**: `/context`, `/onboard`, `/recent`, `/status`
-- **Repository Context**: Access PRs, issues, commits, and timeline data
-- **Team Onboarding**: AI-generated summaries for new team members
-- **Demo Mode**: Predictable responses for hackathon demonstrations
-
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
-
+- Go 1.21+
 - Node.js 18+
-- Existing ContextKeeper Go backend running
-- Slack workspace with bot permissions
+- PostgreSQL 14+
+- Docker (optional)
 
 ### Installation
 
-1. Clone and install dependencies:
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/context_keeper.git
+cd context_keeper
+
+# Install Go dependencies
+go mod download
+
+# Install Node dependencies
 npm install
-```
 
-2. Copy environment configuration:
-```bash
+# Set up environment variables
 cp .env.example .env
+# Edit .env with your configuration
+
+# Run database migrations
+make migrate
+
+# Start the server
+make run
 ```
 
-3. Configure your environment variables in `.env`:
-   - Set your Slack bot token and signing secret
-   - Configure Go backend URL
-   - Adjust ports as needed
+### Docker Deployment
 
-4. Build the project:
 ```bash
-npm run build
+# Development
+docker-compose up
+
+# With MCP server
+docker-compose --profile with-mcp up
+
+# With Slack bot  
+docker-compose --profile with-slack up
+
+# Full stack
+docker-compose --profile with-mcp --profile with-slack up
+
+# Production
+docker-compose -f docker-compose.yml up -d
 ```
 
-5. Start the system:
+See [Docker Guide](docs/DOCKER.md) for detailed instructions.
+
+## 📚 Documentation
+
+- [Setup Guide](docs/SETUP_GUIDE.md) - Detailed setup instructions
+- [Architecture](docs/ARCHITECTURE.md) - System architecture and design
+- [Project Structure](docs/PROJECT_STRUCTURE.md) - Code organization guide
+- [Security](SECURITY.md) - Security policies and best practices
+- [Docker Deployment](docs/DOCKER.md) - Docker deployment guide
+- [Slack Integration](docs/SLACK_INTEGRATION.md) - Slack integration setup
+- [Discord Integration](docs/DISCORD_INTEGRATION.md) - Discord integration setup
+- [Deployment](deployment/README.md) - Kubernetes deployment guide
+
+## 🏗️ Architecture
+
+```
+context_keeper/
+├── cmd/                    # Application entrypoints
+│   └── server/            # Main server application
+├── internal/              # Private application code
+│   ├── config/           # Configuration management
+│   ├── database/         # Database migrations
+│   ├── handlers/         # HTTP request handlers
+│   ├── middleware/       # HTTP middleware
+│   ├── models/           # Data models
+│   ├── repository/       # Data access layer
+│   ├── server/           # Server setup
+│   └── services/         # Business logic
+│       └── connectors/   # Platform connectors (GitHub, Slack, Discord)
+├── src/                   # TypeScript/Node.js code
+│   ├── mcp/              # MCP server implementation
+│   ├── slack/            # Slack bot
+│   └── services/         # Node services
+├── web/                   # Frontend web application
+├── deployment/            # Kubernetes manifests
+├── docs/                  # Documentation
+├── scripts/               # Utility scripts
+└── test/                  # Integration tests
+```
+
+## 🔧 Development
+
+### Running Tests
+
 ```bash
-npm start
-```
+# Go tests
+make test
 
-For development with hot reload:
-```bash
-npm run dev
-```
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MCP_PORT` | MCP server port | 3001 |
-| `GO_BACKEND_URL` | Go backend URL | http://localhost:8080 |
-| `SLACK_BOT_TOKEN` | Slack bot token | Required |
-| `SLACK_SIGNING_SECRET` | Slack signing secret | Required |
-| `SLACK_PORT` | Slack bot port | 3002 |
-| `DEMO_MODE` | Enable demo mode | false |
-
-See `.env.example` for complete configuration options.
-
-## Usage
-
-### Slack Commands
-
-- `/context <query>` - Query repository context
-- `/onboard [repository]` - Get onboarding summary
-- `/recent [repository] [days]` - View recent activity
-- `/status` - Check system status
-
-### MCP Integration
-
-AI assistants can access repository resources and tools:
-
-- **Resources**: Repository metadata, context, timeline
-- **Tools**: `query_repository_context`, `get_onboarding_summary`
-
-## Development
-
-### Scripts
-
-- `npm run build` - Build TypeScript to JavaScript
-- `npm run dev` - Start with hot reload
-- `npm test` - Run tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run lint` - Lint code
-- `npm run clean` - Clean build directory
-
-### Project Structure
-
-```
-src/
-├── index.ts              # Main entry point
-├── types/                # TypeScript interfaces
-│   ├── mcp.ts           # MCP protocol types
-│   ├── slack.ts         # Slack bot types
-│   ├── backend.ts       # Go backend types
-│   └── config.ts        # Configuration types
-├── config/              # Configuration management
-├── mcp/                 # MCP server implementation
-├── slack/               # Slack bot implementation
-└── utils/               # Utilities (logger, etc.)
-```
-
-## Testing
-
-Run the test suite:
-```bash
+# Node tests
 npm test
+
+# Integration tests
+make test-integration
 ```
 
-The project uses Vitest for testing with both unit tests and property-based tests using fast-check.
+### Building
 
-## License
+```bash
+# Build Go binary
+make build
 
-MIT License - see LICENSE file for details.
+# Build Docker image
+docker build -t mcp-context-engine .
+```
+
+## 🔌 Integrations
+
+### GitHub
+- Pull requests, issues, commits, and code reviews
+- File-level change context
+- Automatic decision extraction
+
+### Slack
+- Channel discussions and threads
+- Direct messages
+- Engineering decision tracking
+
+### Discord
+- Server conversations
+- Channel message history
+- Community insights
+
+## 🛠️ MCP Tools
+
+The engine provides 5 MCP-compatible tools:
+
+1. **search_project_knowledge** - Search across all project knowledge
+2. **get_context_for_file** - Get comprehensive file context
+3. **get_decision_history** - Track architectural decisions
+4. **list_recent_architecture_discussions** - Recent discussions
+5. **explain_why_code_exists** - Code reasoning and history
+
+## 🔒 Security
+
+- End-to-end encryption (AES-256-GCM)
+- Complete tenant isolation
+- OAuth 2.0 authentication
+- Role-based access control
+- Audit logging
+- SOC 2 compliant
+
+See [SECURITY.md](SECURITY.md) for details.
+
+## 📝 License
+
+Copyright © 2024 MCP Context Engine. All rights reserved.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read our contributing guidelines before submitting PRs.
+
+## 📧 Support
+
+For questions or issues:
+- Check the [documentation](docs/)
+- Review existing issues
+- Contact support@mcpcontextengine.com

@@ -1,37 +1,215 @@
+# Docker Compose for MCP Context Engine
+# Production-ready configuration with all services
+
 version: '3.8'
 
 services:
-  contextkeeper-mcp-slack-bot:
-    build: .
-    ports:
-      - "3001:3001"  # MCP Server
-      - "3002:3002"  # Slack Bot
-    environment:
-      - NODE_ENV=production
-      - MCP_PORT=3001
-      - SLACK_PORT=3002
-      - GO_BACKEND_URL=http://host.docker.internal:8080
-      - LOG_LEVEL=info
-    env_file:
-      - .env
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: mcp-postgres
     restart: unless-stopped
-    depends_on:
-      - contextkeeper-go-backend
+    environment:
+      POSTGRES_DB: contextkeeper
+      POSTGRES_USER: contextkeeper
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
-      - contextkeeper-network
+      - mcp-network
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contextkeeper"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Reference to existing Go backend (if running via Docker)
-  contextkeeper-go-backend:
-    image: contextkeeper-go-backend:latest
+  # Redis Cache (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: mcp-redis
+    restart: unless-stopped
+    networks:
+      - mcp-network
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - with-cache
+
+  # Go Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-backend
+    restart: unless-stopped
+    command: ["/app/bin/server"]
     ports:
       - "8080:8080"
     environment:
+      # Server
       - PORT=8080
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+      
+      # Database
+      - DATABASE_URL=postgres://contextkeeper:${POSTGRES_PASSWORD}@postgres:5432/contextkeeper?sslmode=disable
+      
+      # Authentication
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret
+      - GITHUB_CLIENT_ID_FILE=/run/secrets/github_client_id
+      - GITHUB_CLIENT_SECRET_FILE=/run/secrets/github_client_secret
+      - GITHUB_REDIRECT_URL=${GITHUB_REDIRECT_URL:-http://localhost:8080/api/auth/github}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET_FILE=/run/secrets/google_client_secret
+      
+      # Slack
+      - SLACK_CLIENT_ID=${SLACK_CLIENT_ID}
+      - SLACK_CLIENT_SECRET_FILE=/run/secrets/slack_client_secret
+      - SLACK_REDIRECT_URL=${SLACK_REDIRECT_URL:-http://localhost:8080/api/auth/slack}
+      
+      # AI Service
+      - AI_SERVICE_URL=${AI_SERVICE_URL:-http://ai-service:8000}
+      - AI_SERVICE_TIMEOUT=30
+      
+      # CORS
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080}
+    
+    secrets:
+      - postgres_password
+      - jwt_secret
+      - github_client_id
+      - github_client_secret
+      - google_client_secret
+      - slack_client_secret
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
     networks:
-      - contextkeeper-network
-    profiles:
-      - with-backend
+      - mcp-network
+    
+    volumes:
+      - backend_logs:/app/logs
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
+  # MCP Server (Node.js)
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-server
+    restart: unless-stopped
+    command: ["node", "dist/mcp/server.js"]
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - MCP_PORT=3001
+      - GO_BACKEND_URL=http://backend:8080
+      - LOG_LEVEL=info
+    depends_on:
+      - backend
+    networks:
+      - mcp-network
+    volumes:
+      - mcp_logs:/app/logs
+    profiles:
+      - with-mcp
+
+  # Slack Bot (Node.js)
+  slack-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-slack-bot
+    restart: unless-stopped
+    command: ["node", "dist/slack/bot.js"]
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - SLACK_PORT=3002
+      - SLACK_SIGNING_SECRET_FILE=/run/secrets/slack_signing_secret
+      - MCP_SERVER_URL=http://mcp-server:3001
+      - GO_BACKEND_URL=http://backend:8080
+      - LOG_LEVEL=info
+    secrets:
+      - slack_signing_secret
+    depends_on:
+      - backend
+      - mcp-server
+    networks:
+      - mcp-network
+    volumes:
+      - slack_logs:/app/logs
+    profiles:
+      - with-slack
+
+# Secrets (use Docker secrets or environment variables)
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
+  github_client_id:
+    file: ./secrets/github_client_id.txt
+  github_client_secret:
+    file: ./secrets/github_client_secret.txt
+  google_client_secret:
+    file: ./secrets/google_client_secret.txt
+  slack_client_secret:
+    file: ./secrets/slack_client_secret.txt
+  slack_signing_secret:
+    file: ./secrets/slack_signing_secret.txt
+
+# Volumes
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_logs:
+    driver: local
+  mcp_logs:
+    driver: local
+  slack_logs:
+    driver: local
+
+# Networks
 networks:
-  contextkeeper-network:
+  mcp-network:
     driver: bridge
+
+# Usage:
+# Development (backend only):
+#   docker-compose up
+#
+# With MCP server:
+#   docker-compose --profile with-mcp up
+#
+# With Slack bot:
+#   docker-compose --profile with-slack up
+#
+# Full stack:
+#   docker-compose --profile with-mcp --profile with-slack up
+#
+# With cache:
+#   docker-compose --profile with-cache up

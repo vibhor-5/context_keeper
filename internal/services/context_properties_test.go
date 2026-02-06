@@ -92,7 +92,8 @@ func validateContextFilteringProperty(t *testing.T, scenario ContextFilteringSce
 	defer mockAIServer.Close()
 
 	mockRepo := NewMockRepositoryStore()
-	contextService := NewContextService(mockRepo, mockAIServer.URL)
+	mockPermission := NewMockPermissionService()
+	contextService := NewContextService(mockRepo, mockPermission, mockAIServer.URL)
 
 	// Set up test repository
 	repoID := int64(1)
@@ -223,10 +224,12 @@ func validateTimeoutProperty(t *testing.T, scenario TimeoutScenario) bool {
 	defer mockAIServer.Close()
 
 	mockRepo := NewMockRepositoryStore()
+	mockPermission := NewMockPermissionService()
 	// Create context service with shorter timeout for testing
 	contextService := &ContextServiceImpl{
-		repo:      mockRepo,
-		aiBaseURL: mockAIServer.URL,
+		repo:          mockRepo,
+		permissionSvc: mockPermission,
+		aiBaseURL:     mockAIServer.URL,
 		client: &http.Client{
 			Timeout: 3 * time.Second, // 3-second timeout for testing
 		},
