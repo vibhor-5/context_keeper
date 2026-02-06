@@ -14,16 +14,18 @@ import (
 
 // ContextServiceImpl implements the ContextService interface
 type ContextServiceImpl struct {
-	repo      RepositoryStore
-	aiBaseURL string
-	client    *http.Client
+	repo           RepositoryStore
+	permissionSvc  PermissionService
+	aiBaseURL      string
+	client         *http.Client
 }
 
 // NewContextService creates a new context service instance
-func NewContextService(repo RepositoryStore, aiBaseURL string) ContextService {
+func NewContextService(repo RepositoryStore, permissionSvc PermissionService, aiBaseURL string) ContextService {
 	return &ContextServiceImpl{
-		repo:      repo,
-		aiBaseURL: aiBaseURL,
+		repo:          repo,
+		permissionSvc: permissionSvc,
+		aiBaseURL:     aiBaseURL,
 		client: &http.Client{
 			Timeout: 30 * time.Second, // 30-second timeout as per requirements
 		},
@@ -138,6 +140,63 @@ func (c *ContextServiceImpl) callAIService(ctx context.Context, request models.F
 	}
 
 	return &aiResponse, nil
+}
+
+// ProcessQueryByProject processes a context query for all repositories in a project
+func (c *ContextServiceImpl) ProcessQueryByProject(ctx context.Context, projectID string, query, mode string) (*models.ContextResponse, error) {
+	// Filter project data for AI service
+	projectData, err := c.FilterProjectData(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to filter project data: %w", err)
+	}
+
+	// Get project information for context
+	project, err := c.repo.GetProjectWorkspace(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project workspace: %w", err)
+	}
+
+	// Prepare request payload for AI service
+	aiRequest := models.FilteredRepoData{
+		Repo:    fmt.Sprintf("Project: %s", project.Name),
+		Query:   query,
+		Context: *projectData,
+	}
+
+	// Send request to AI service
+	response, err := c.callAIService(ctx, aiRequest, mode)
+	if err != nil {
+		return nil, fmt.Errorf("AI service call failed: %w", err)
+	}
+
+	return response, nil
+}
+
+// FilterProjectData filters project data to the most recent items for AI service
+func (c *ContextServiceImpl) FilterProjectData(ctx context.Context, projectID string) (*models.RepoContext, error) {
+	// Get the most recent 10 pull requests across all project repositories
+	prs, err := c.repo.GetRecentPRsByProject(ctx, projectID, 10)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recent pull requests: %w", err)
+	}
+
+	// Get the most recent 10 issues across all project repositories
+	issues, err := c.repo.GetRecentIssuesByProject(ctx, projectID, 10)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recent issues: %w", err)
+	}
+
+	// Get the most recent 20 commits across all project repositories
+	commits, err := c.repo.GetRecentCommitsByProject(ctx, projectID, 20)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recent commits: %w", err)
+	}
+
+	return &models.RepoContext{
+		PullRequests: prs,
+		Issues:       issues,
+		Commits:      commits,
+	}, nil
 }
 
 // getAIEndpoint returns the appropriate AI service endpoint based on mode

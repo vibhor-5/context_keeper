@@ -1,0 +1,73 @@
+# Docker Compose Override for Development
+# This file is automatically loaded with docker-compose.yml
+# Use for local development with hot-reload and debugging
+
+version: '3.8'
+
+services:
+  postgres:
+    environment:
+      # Use simple password for development
+      POSTGRES_PASSWORD: postgres
+    # Remove secrets in dev
+    secrets: []
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: go-builder  # Use builder stage for development
+    command: ["go", "run", "./cmd/server/main.go"]
+    environment:
+      # Override for development
+      - ENVIRONMENT=development
+      - LOG_LEVEL=debug
+      - DATABASE_URL=postgres://contextkeeper:postgres@postgres:5432/contextkeeper?sslmode=disable
+      - JWT_SECRET=dev-jwt-secret-change-in-production
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - SLACK_CLIENT_ID=${SLACK_CLIENT_ID}
+      - SLACK_CLIENT_SECRET=${SLACK_CLIENT_SECRET}
+      - ALLOWED_ORIGINS=*
+    # Remove secrets in dev
+    secrets: []
+    # Mount source code for hot reload
+    volumes:
+      - .:/app
+      - /app/bin  # Exclude bin directory
+    working_dir: /app
+
+  mcp-server:
+    command: ["npm", "run", "dev:mcp"]
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+    volumes:
+      - .:/app
+      - /app/node_modules
+    working_dir: /app
+
+  slack-bot:
+    command: ["npm", "run", "dev:slack"]
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
+    secrets: []
+    volumes:
+      - .:/app
+      - /app/node_modules
+    working_dir: /app
+
+# Development notes:
+# - Secrets are replaced with environment variables
+# - Source code is mounted for hot reload
+# - Debug logging is enabled
+# - CORS is open for development
+#
+# Usage:
+#   docker-compose up                    # Backend + Postgres
+#   docker-compose --profile with-mcp up # Add MCP server
+#   docker-compose --profile with-slack up # Add Slack bot

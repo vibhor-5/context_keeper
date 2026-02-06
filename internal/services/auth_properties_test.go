@@ -22,9 +22,16 @@ func TestOAuthScopeConsistencyProperty(t *testing.T) {
 			ClientID:     "test-client-id",
 			ClientSecret: "test-client-secret",
 		},
+		JWTSecret: "test-secret",
 	}
 
-	authSvc := NewAuthService(cfg).(*AuthServiceImpl)
+	// Create mock dependencies
+	mockStore := NewMockMultiTenantStore()
+	mockPasswordSvc := NewMockPasswordService()
+	mockEmailSvc := NewMockEmailService()
+	mockGoogleOAuth := NewMockGoogleOAuthService()
+
+	authSvc := NewAuthService(cfg, mockStore, mockPasswordSvc, mockEmailSvc, mockGoogleOAuth).(*AuthServiceImpl)
 	requiredScopes := []string{"public_repo", "read:user", "user:email"}
 
 	rand.Seed(time.Now().UnixNano())
@@ -57,7 +64,13 @@ func TestJWTAuthenticationRoundTripProperty(t *testing.T) {
 		JWTSecret: "test-secret-key-for-property-testing",
 	}
 
-	authSvc := NewAuthService(cfg).(*AuthServiceImpl)
+	// Create mock dependencies
+	mockStore := NewMockMultiTenantStore()
+	mockPasswordSvc := NewMockPasswordService()
+	mockEmailSvc := NewMockEmailService()
+	mockGoogleOAuth := NewMockGoogleOAuthService()
+
+	authSvc := NewAuthService(cfg, mockStore, mockPasswordSvc, mockEmailSvc, mockGoogleOAuth).(*AuthServiceImpl)
 	rand.Seed(time.Now().UnixNano())
 
 	// Run property test with 100 iterations
@@ -252,7 +265,13 @@ func TestJWTTokenStructureProperty(t *testing.T) {
 		JWTSecret: "test-secret-key",
 	}
 
-	authSvc := NewAuthService(cfg).(*AuthServiceImpl)
+	// Create mock dependencies
+	mockStore := NewMockMultiTenantStore()
+	mockPasswordSvc := NewMockPasswordService()
+	mockEmailSvc := NewMockEmailService()
+	mockGoogleOAuth := NewMockGoogleOAuthService()
+
+	authSvc := NewAuthService(cfg, mockStore, mockPasswordSvc, mockEmailSvc, mockGoogleOAuth).(*AuthServiceImpl)
 	rand.Seed(time.Now().UnixNano())
 
 	for i := 0; i < 50; i++ {

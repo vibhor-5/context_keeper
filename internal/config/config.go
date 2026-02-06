@@ -16,6 +16,9 @@ type Config struct {
 	DatabaseURL string
 	JWTSecret   string
 	GitHubOAuth GitHubOAuthConfig
+	GoogleOAuth GoogleOAuthConfig
+	SlackOAuth  SlackOAuthConfig
+	Email       EmailConfig
 	AIService   AIServiceConfig
 	Environment string
 	LogLevel    string
@@ -26,6 +29,30 @@ type GitHubOAuthConfig struct {
 	ClientID     string
 	ClientSecret string
 	RedirectURL  string
+}
+
+// GoogleOAuthConfig holds Google OAuth configuration
+type GoogleOAuthConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+}
+
+// SlackOAuthConfig holds Slack OAuth configuration
+type SlackOAuthConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+}
+
+// EmailConfig holds email service configuration
+type EmailConfig struct {
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUsername string
+	SMTPPassword string
+	FromAddress  string
+	FromName     string
 }
 
 // AIServiceConfig holds AI service configuration
@@ -46,6 +73,24 @@ func Load() *Config {
 			ClientID:     getEnv("GITHUB_CLIENT_ID", ""),
 			ClientSecret: getSecretOrEnv("GITHUB_CLIENT_SECRET_FILE", "GITHUB_CLIENT_SECRET", ""),
 			RedirectURL:  getEnv("GITHUB_REDIRECT_URL", "http://localhost:8080/api/auth/github"),
+		},
+		GoogleOAuth: GoogleOAuthConfig{
+			ClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+			ClientSecret: getSecretOrEnv("GOOGLE_CLIENT_SECRET_FILE", "GOOGLE_CLIENT_SECRET", ""),
+			RedirectURL:  getEnv("GOOGLE_REDIRECT_URL", "http://localhost:8080/api/auth/google"),
+		},
+		SlackOAuth: SlackOAuthConfig{
+			ClientID:     getEnv("SLACK_CLIENT_ID", ""),
+			ClientSecret: getSecretOrEnv("SLACK_CLIENT_SECRET_FILE", "SLACK_CLIENT_SECRET", ""),
+			RedirectURL:  getEnv("SLACK_REDIRECT_URL", "http://localhost:8080/api/auth/slack"),
+		},
+		Email: EmailConfig{
+			SMTPHost:     getEnv("SMTP_HOST", ""),
+			SMTPPort:     getEnvInt("SMTP_PORT", 587),
+			SMTPUsername: getEnv("SMTP_USERNAME", ""),
+			SMTPPassword: getSecretOrEnv("SMTP_PASSWORD_FILE", "SMTP_PASSWORD", ""),
+			FromAddress:  getEnv("EMAIL_FROM_ADDRESS", "noreply@contextkeeper.dev"),
+			FromName:     getEnv("EMAIL_FROM_NAME", "Context Keeper"),
 		},
 		AIService: AIServiceConfig{
 			BaseURL: getEnv("AI_SERVICE_URL", "http://localhost:8000"),
@@ -77,12 +122,41 @@ func (c *Config) Validate() error {
 		errors = append(errors, "JWT_SECRET is required")
 	}
 
-	if c.GitHubOAuth.ClientID == "" {
-		errors = append(errors, "GITHUB_CLIENT_ID is required")
+	// GitHub OAuth is optional but if provided, both client ID and secret are required
+	if c.GitHubOAuth.ClientID != "" && c.GitHubOAuth.ClientSecret == "" {
+		errors = append(errors, "GITHUB_CLIENT_SECRET is required when GITHUB_CLIENT_ID is provided")
+	}
+	if c.GitHubOAuth.ClientSecret != "" && c.GitHubOAuth.ClientID == "" {
+		errors = append(errors, "GITHUB_CLIENT_ID is required when GITHUB_CLIENT_SECRET is provided")
 	}
 
-	if c.GitHubOAuth.ClientSecret == "" {
-		errors = append(errors, "GITHUB_CLIENT_SECRET is required")
+	// Google OAuth is optional but if provided, both client ID and secret are required
+	if c.GoogleOAuth.ClientID != "" && c.GoogleOAuth.ClientSecret == "" {
+		errors = append(errors, "GOOGLE_CLIENT_SECRET is required when GOOGLE_CLIENT_ID is provided")
+	}
+	if c.GoogleOAuth.ClientSecret != "" && c.GoogleOAuth.ClientID == "" {
+		errors = append(errors, "GOOGLE_CLIENT_ID is required when GOOGLE_CLIENT_SECRET is provided")
+	}
+
+	// Slack OAuth is optional but if provided, both client ID and secret are required
+	if c.SlackOAuth.ClientID != "" && c.SlackOAuth.ClientSecret == "" {
+		errors = append(errors, "SLACK_CLIENT_SECRET is required when SLACK_CLIENT_ID is provided")
+	}
+	if c.SlackOAuth.ClientSecret != "" && c.SlackOAuth.ClientID == "" {
+		errors = append(errors, "SLACK_CLIENT_ID is required when SLACK_CLIENT_SECRET is provided")
+	}
+
+	// Email configuration is optional but if SMTP host is provided, other fields are required
+	if c.Email.SMTPHost != "" {
+		if c.Email.SMTPUsername == "" {
+			errors = append(errors, "SMTP_USERNAME is required when SMTP_HOST is provided")
+		}
+		if c.Email.SMTPPassword == "" {
+			errors = append(errors, "SMTP_PASSWORD is required when SMTP_HOST is provided")
+		}
+		if c.Email.FromAddress == "" {
+			errors = append(errors, "EMAIL_FROM_ADDRESS is required when SMTP_HOST is provided")
+		}
 	}
 
 	if c.AIService.BaseURL == "" {

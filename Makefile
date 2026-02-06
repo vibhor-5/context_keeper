@@ -1,44 +1,111 @@
-# Go parameters
-GOCMD=/usr/local/go/bin/go
-GOBUILD=$(GOCMD) build
-GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOCMD) test
-GOGET=$(GOCMD) get
-GOMOD=$(GOCMD) mod
-BINARY_NAME=server
-BINARY_PATH=bin/$(BINARY_NAME)
+.PHONY: help build run test clean docker-build docker-run migrate lint
 
-.PHONY: all build clean test deps run
+# Default target
+help:
+	@echo "MCP Context Engine - Available Commands:"
+	@echo ""
+	@echo "  make build              - Build the Go binary"
+	@echo "  make run                - Run the server"
+	@echo "  make test               - Run all tests"
+	@echo "  make test-go            - Run Go tests"
+	@echo "  make test-node          - Run Node.js tests"
+	@echo "  make test-integration   - Run integration tests"
+	@echo "  make clean              - Clean build artifacts"
+	@echo "  make docker-build       - Build Docker image"
+	@echo "  make docker-run         - Run with Docker Compose"
+	@echo "  make migrate            - Run database migrations"
+	@echo "  make lint               - Run linters"
+	@echo "  make fmt                - Format code"
+	@echo ""
 
-all: deps build
-
+# Build the Go binary
 build:
-	$(GOBUILD) -o $(BINARY_PATH) cmd/server/main.go
+	@echo "Building Go binary..."
+	go build -o bin/server ./cmd/server
 
+# Run the server
+run:
+	@echo "Starting server..."
+	go run ./cmd/server/main.go
+
+# Run all tests
+test: test-go test-node
+
+# Run Go tests
+test-go:
+	@echo "Running Go tests..."
+	go test -v -race -coverprofile=coverage.out ./...
+
+# Run Node.js tests
+test-node:
+	@echo "Running Node.js tests..."
+	npm test
+
+# Run integration tests
+test-integration:
+	@echo "Running integration tests..."
+	go test -v -tags=integration ./test/...
+
+# Clean build artifacts
 clean:
-	$(GOCLEAN)
-	rm -f $(BINARY_PATH)
+	@echo "Cleaning build artifacts..."
+	rm -rf bin/
+	rm -rf dist/
+	rm -rf coverage.out
+	rm -f server
+	rm -f contextkeeper-backend
 
-test:
-	$(GOTEST) -v ./...
-
-deps:
-	$(GOMOD) tidy
-	$(GOMOD) download
-
-run: build
-	./$(BINARY_PATH)
-
-dev:
-	$(GOCMD) run cmd/server/main.go
-
+# Docker commands
 docker-build:
-	docker build -t contextkeeper-backend .
+	@echo "Building Docker image..."
+	docker-compose build
 
-docker-run:
-	docker-compose up --build
+docker-up:
+	@echo "Starting services with Docker Compose..."
+	docker-compose up -d
 
 docker-down:
+	@echo "Stopping Docker Compose services..."
 	docker-compose down
 
-.DEFAULT_GOAL := build
+docker-logs:
+	@echo "Showing Docker logs..."
+	docker-compose logs -f
+
+docker-clean:
+	@echo "Cleaning Docker resources..."
+	docker-compose down -v
+	docker system prune -f
+
+# Run database migrations
+migrate:
+	@echo "Running database migrations..."
+	go run ./cmd/server/main.go migrate
+
+# Run linters
+lint:
+	@echo "Running linters..."
+	golangci-lint run ./...
+	npm run lint
+
+# Format code
+fmt:
+	@echo "Formatting code..."
+	go fmt ./...
+	npm run format
+
+# Install dependencies
+deps:
+	@echo "Installing dependencies..."
+	go mod download
+	npm install
+
+# Development mode with hot reload
+dev:
+	@echo "Starting development mode..."
+	air
+
+# Generate documentation
+docs:
+	@echo "Generating documentation..."
+	godoc -http=:6060

@@ -1,4 +1,4 @@
-# ContextKeeper MCP + Slack Bot Deployment Guide
+# Cortext
 
 This directory contains deployment configurations for the ContextKeeper MCP + Slack Bot system.
 
