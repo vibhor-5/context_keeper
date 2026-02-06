@@ -1,4 +1,4 @@
-# MCP Context Engine
+# Cortext
 
 AI-powered developer context intelligence that aggregates knowledge from GitHub, Slack, and Discord directly into your IDE through MCP-compatible tools.
 
